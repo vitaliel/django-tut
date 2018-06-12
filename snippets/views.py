@@ -1,8 +1,19 @@
 from django.contrib.auth.models import User
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, renderers
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 from .models import Snippet
 from .serializers import SnippetSerializer, UserSerializer
 from .permissions import IsOwnerOrReadOnly
+
+@api_view(['GET'])
+def api_root(req, format=None):
+  return Response({
+    'users': reverse('user-list', request=req, format=format),
+    'snippets': reverse('snippet-list', request=req, format=format)
+  })
 
 class SnippetList(generics.ListCreateAPIView):
   queryset = Snippet.objects.all()
@@ -24,3 +35,11 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveAPIView):
   queryset = User.objects.all()
   serializer_class = UserSerializer
+
+class SnippetHighlight(generics.GenericAPIView):
+  queryset = Snippet.objects.all()
+  renderer_class = (renderers.StaticHTMLRenderer,)
+
+  def get(self, req, *args, **kwargs):
+    snippet = self.get_object()
+    return Response(snippet.highlighted)
